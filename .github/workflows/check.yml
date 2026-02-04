@@ -1,0 +1,40 @@
+name: X account SMS alert
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 10 dakikada bir çalışır
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests
+
+      - name: Run checker
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+          TWILIO_TO: ${{ secrets.TWILIO_TO }}
+        run: python check_x.py
+
+      - name: Save flag
+        run: |
+          if [ -f notified.txt ]; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add notified.txt
+            git commit -m "SMS sent" || true
+            git push
+          fi
